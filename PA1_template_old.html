@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+
+<head>
+
+<meta charset="utf-8">
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="generator" content="pandoc" />
+
+<meta name="author" content="Luis" />
+
+
+<title>Reproducible Research Assigment 1</title>
+
+<script src="PA1_template_old_files/jquery-1.11.0/jquery.min.js"></script>
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<link href="PA1_template_old_files/bootstrap-3.3.1/css/bootstrap.min.css" rel="stylesheet" />
+<script src="PA1_template_old_files/bootstrap-3.3.1/js/bootstrap.min.js"></script>
+<script src="PA1_template_old_files/bootstrap-3.3.1/shim/html5shiv.min.js"></script>
+<script src="PA1_template_old_files/bootstrap-3.3.1/shim/respond.min.js"></script>
+
+<style type="text/css">code{white-space: pre;}</style>
+<link rel="stylesheet"
+      href="PA1_template_old_files/highlight/default.css"
+      type="text/css" />
+<script src="PA1_template_old_files/highlight/highlight.js"></script>
+<style type="text/css">
+  pre:not([class]) {
+    background-color: white;
+  }
+</style>
+<script type="text/javascript">
+if (window.hljs && document.readyState && document.readyState === "complete") {
+   window.setTimeout(function() {
+      hljs.initHighlighting();
+   }, 0);
+}
+</script>
+
+
+
+</head>
+
+<body>
+
+<style type = "text/css">
+.main-container {
+  max-width: 940px;
+  margin-left: auto;
+  margin-right: auto;
+}
+code {
+  color: inherit;
+  background-color: rgba(0, 0, 0, 0.04);
+}
+img { 
+  max-width:100%; 
+  height: auto; 
+}
+</style>
+<div class="container-fluid main-container">
+
+
+<div id="header">
+<h1 class="title">Reproducible Research Assigment 1</h1>
+<h4 class="author"><em>Luis</em></h4>
+<h4 class="date"><em>February 4, 2016</em></h4>
+</div>
+
+
+<div id="loading-and-preprocessing-the-data" class="section level1">
+<h1>1. Loading and preprocessing the data</h1>
+<p>Reading the data:</p>
+<pre class="r"><code>setwd(&quot;/home/luis/repo/ReproductibleResearch/RR1/RepData_PeerAssessment1&quot;)
+actdata &lt;- read.csv(&quot;activity.csv&quot;)</code></pre>
+<p>With this we have a dataframe with the data. We will create an additional dataframe with clean data.</p>
+<p>Cleaning the data:</p>
+<pre class="r"><code>adc &lt;- actdata[!is.na(actdata$steps),]</code></pre>
+<p>“adc” is a second dataframe which the rows with “NA” in the “steps” column had been removed.</p>
+</div>
+<div id="what-is-mean-total-number-of-steps-taken-per-day" class="section level1">
+<h1>2. What is mean total number of steps taken per day?</h1>
+<p>We first calculate the sum of the steps taken each day with the tapply function.</p>
+<p>Sum per date:</p>
+<pre class="r"><code>steps_per_day &lt;- tapply(actdata$steps,actdata$date,FUN = sum)</code></pre>
+<p>Following this, we plot an histogram showing the number of days with certains amount of steps taken (we use 10 boxes)</p>
+<p>Histogram of steps per day (Number of days in which the x-axis amount of steps is done):</p>
+<pre class="r"><code>hist(steps_per_day, breaks = 10, main = &quot;Steps per day&quot;)</code></pre>
+<p><img src="PA1_template_old_files/figure-html/unnamed-chunk-4-1.png" title="" alt="" width="672" /></p>
+<p>We can calculate the mean and the median of the total steps taken each day:</p>
+<pre class="r"><code>mean(steps_per_day[!is.na(steps_per_day)])</code></pre>
+<pre><code>## [1] 10766.19</code></pre>
+<pre class="r"><code>median(steps_per_day[!is.na(steps_per_day)])</code></pre>
+<pre><code>## [1] 10765</code></pre>
+<p>As we can see the mean of the total steps is 10766 and the median 10765. The values are very close.</p>
+</div>
+<div id="what-is-the-average-daily-activity-pattern" class="section level1">
+<h1>3. What is the average daily activity pattern?</h1>
+<p>Calculating and plotting the mean steps for each 5 minutes interval of the day, using again tapply and the basic plot system.</p>
+<pre class="r"><code>mean_steps &lt;- tapply(adc$steps,adc$interval,FUN = mean)
+maint = &quot;Number of steps vs 5min Interval of the day&quot;
+ylabt = &quot;Mean number of seps&quot;
+xlabt = &quot;5min interval number&quot;
+plot(mean_steps,type = &quot;l&quot;, main = maint, ylab = ylabt, xlab = xlabt)</code></pre>
+<p><img src="PA1_template_old_files/figure-html/unnamed-chunk-6-1.png" title="" alt="" width="672" /></p>
+<p>We can see that the interval with higher mean steps is at 8:35 (index 104)</p>
+<pre class="r"><code>which.max(mean_steps)</code></pre>
+<pre><code>## 835 
+## 104</code></pre>
+<p>With a mean value over 206</p>
+<pre class="r"><code>max(mean_steps)</code></pre>
+<pre><code>## [1] 206.1698</code></pre>
+</div>
+<div id="imputing-missing-values" class="section level1">
+<h1>4. Imputing missing values</h1>
+<p>We can calculate the number of rows with NA, substracting the number of rows of the clean dataframe from the number of row of the original dataframe.</p>
+<pre class="r"><code>dim(actdata)[1] - dim(adc)[1]</code></pre>
+<pre><code>## [1] 2304</code></pre>
+<p>The number of “NA” in the steps column is 2304.</p>
+<p>We will fill the missing “NA” values in the original dataframe, and we are going to do it using the mean value for that interval.</p>
+<pre class="r"><code>actdata2 &lt;- actdata
+#dummy &lt;- as.vector(mean_steps)
+for (i in 1:dim(actdata2)[1]) {
+  #print(i)
+  if (is.na(actdata2$steps[i])) {
+    #print(actdata2$interval[i]/5)
+    #print(dummy[(actdata2$interval[i]/5)+1])
+    actdata2$steps[i] &lt;- as.vector(mean_steps[as.character(actdata2$interval[i])])
+  }
+}</code></pre>
+<p>We proceed to calculate the new histogram</p>
+<pre class="r"><code>steps_per_day2 &lt;- tapply(actdata2$steps,actdata2$date,FUN = sum)
+hist(steps_per_day2, breaks = 10, main = &quot;Steps per day (With filled data)&quot;)</code></pre>
+<p><img src="PA1_template_old_files/figure-html/unnamed-chunk-11-1.png" title="" alt="" width="672" /></p>
+<p>And the new mean and median</p>
+<pre class="r"><code>mean(steps_per_day2[!is.na(steps_per_day2)])</code></pre>
+<pre><code>## [1] 10766.19</code></pre>
+<pre class="r"><code>median(steps_per_day2[!is.na(steps_per_day2)])</code></pre>
+<pre><code>## [1] 10766.19</code></pre>
+<p>The news values are 10766.19 and 10766.19. Which, as we can see:</p>
+<pre class="r"><code>mea1 &lt;- mean(steps_per_day[!is.na(steps_per_day)])
+med1 &lt;- median(steps_per_day[!is.na(steps_per_day)])
+mea2 &lt;- mean(steps_per_day2[!is.na(steps_per_day2)])
+med2 &lt;- median(steps_per_day2[!is.na(steps_per_day2)])
+mea2-mea1</code></pre>
+<pre><code>## [1] 0</code></pre>
+<pre class="r"><code>med2-med1</code></pre>
+<pre><code>## [1] 1.188679</code></pre>
+<p>in the case of the mean is exactly the same as the originals, with a slight difference in the median, due to the way we decide to replace the “NA” values.</p>
+<p>Here we can see the difference in steps-per-day between the two datasets</p>
+<pre class="r"><code>steps_per_day2 - steps_per_day</code></pre>
+<pre><code>## 2012-10-01 2012-10-02 2012-10-03 2012-10-04 2012-10-05 2012-10-06 
+##         NA          0          0          0          0          0 
+## 2012-10-07 2012-10-08 2012-10-09 2012-10-10 2012-10-11 2012-10-12 
+##          0         NA          0          0          0          0 
+## 2012-10-13 2012-10-14 2012-10-15 2012-10-16 2012-10-17 2012-10-18 
+##          0          0          0          0          0          0 
+## 2012-10-19 2012-10-20 2012-10-21 2012-10-22 2012-10-23 2012-10-24 
+##          0          0          0          0          0          0 
+## 2012-10-25 2012-10-26 2012-10-27 2012-10-28 2012-10-29 2012-10-30 
+##          0          0          0          0          0          0 
+## 2012-10-31 2012-11-01 2012-11-02 2012-11-03 2012-11-04 2012-11-05 
+##          0         NA          0          0         NA          0 
+## 2012-11-06 2012-11-07 2012-11-08 2012-11-09 2012-11-10 2012-11-11 
+##          0          0          0         NA         NA          0 
+## 2012-11-12 2012-11-13 2012-11-14 2012-11-15 2012-11-16 2012-11-17 
+##          0          0         NA          0          0          0 
+## 2012-11-18 2012-11-19 2012-11-20 2012-11-21 2012-11-22 2012-11-23 
+##          0          0          0          0          0          0 
+## 2012-11-24 2012-11-25 2012-11-26 2012-11-27 2012-11-28 2012-11-29 
+##          0          0          0          0          0          0 
+## 2012-11-30 
+##         NA</code></pre>
+<p>The only difference is the steps added in the missing value days:</p>
+<pre class="r"><code>steps_per_day2[is.na(steps_per_day)]</code></pre>
+<pre><code>## 2012-10-01 2012-10-08 2012-11-01 2012-11-04 2012-11-09 2012-11-10 
+##   10766.19   10766.19   10766.19   10766.19   10766.19   10766.19 
+## 2012-11-14 2012-11-30 
+##   10766.19   10766.19</code></pre>
+</div>
+<div id="are-there-differences-in-activity-patterns-between-weekdays-and-weekends" class="section level1">
+<h1>5. Are there differences in activity patterns between weekdays and weekends?</h1>
+<p>Adding a new column classifying the dates between “weekdays” and “weekend”</p>
+<pre class="r"><code>myfunction &lt;- function(ddate){
+if (weekdays(as.Date(ddate)) == &quot;zaterdag&quot; | weekdays(as.Date(ddate)) == &quot;zondag&quot;){
+  return(&quot;weekend&quot;)
+} else {
+  return(&quot;weekday&quot;)
+}  
+}
+
+actdata2$daytype &lt;- apply(actdata2,1,function(row) myfunction(row[2]))</code></pre>
+<p>And plotting:</p>
+<pre class="r"><code>intervals &lt;- actdata$interval[actdata$date == &quot;2012-11-04&quot;]
+mswd &lt;- tapply(actdata2$steps[actdata2$daytype == &quot;weekday&quot;],actdata2$interval[actdata2$daytype == &quot;weekday&quot;],FUN = mean)
+mswe &lt;- tapply(actdata2$steps[actdata2$daytype == &quot;weekend&quot;],actdata2$interval[actdata2$daytype == &quot;weekend&quot;],FUN = mean)
+
+layout(c(1,2))
+plot(intervals,mswd,type = &quot;l&quot;,main = &quot;weekday&quot;,ylab = &quot;steps&quot;,xlab = &quot;&quot;)
+plot(intervals,mswe,type = &quot;l&quot;,main = &quot;weekend&quot;,ylab = &quot;steps&quot;)</code></pre>
+<p><img src="PA1_template_old_files/figure-html/unnamed-chunk-17-1.png" title="" alt="" width="672" /></p>
+</div>
+
+
+</div>
+
+<script>
+
+// add bootstrap table styles to pandoc tables
+$(document).ready(function () {
+  $('tr.header').parent('thead').parent('table').addClass('table table-condensed');
+});
+
+</script>
+
+<!-- dynamically load mathjax for compatibility with self-contained -->
+<script>
+  (function () {
+    var script = document.createElement("script");
+    script.type = "text/javascript";
+    script.src  = "https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML";
+    document.getElementsByTagName("head")[0].appendChild(script);
+  })();
+</script>
+
+</body>
+</html>

@@ -54,16 +54,6 @@ xlabt = "5min interval number"
 plot(mean_steps,type = "l", main = maint, ylab = ylabt, xlab = xlabt)
 ```
 
-We can see that the interval with higher mean steps is at 8:35 (index 104)
-```{r}
-which.max(mean_steps)
-```
-With a mean value over 206
-```{r}
-max(mean_steps)
-```
-
-
 #4. Imputing missing values
 
 We can calculate the number of rows with NA, substracting the number of rows of the clean dataframe from the number of row of the original dataframe.
@@ -134,15 +124,38 @@ actdata2$daytype <- apply(actdata2,1,function(row) myfunction(row[2]))
 ```
 
 And plotting:
+```{r}
+library(lattice)
+dayt.f <-factor(actdata2$daytype,levels=c("weekday","weekend"), labels=c("Weekday","Weekend"))
+#xyplot(actdata2$steps~actdata2$interval|dayt.f,
+xyplot(actdata2$steps~actdata2$interval|actdata2$daytype,
+   main="Density Plot by Number of Cylinders",
+   xlab="Miles per Gallon",type = "l",layout=c(1,2))
+```
+
+```{r}
+df <- data.frame(m = numeric(),  i = as.Date(character()),   dt = character())
+for (Date in levels(actdata2$date)) { 
+  MeanSteps <- mean(actdata2$steps[actdata2$date == Date])
+  DayType <- actdata2$daytype[actdata2$date == Date][1]
+  df <- rbind(df,data.frame(MeanSteps,Date,DayType))
+}
+```
 
 ```{r}
 intervals <- actdata$interval[actdata$date == "2012-11-04"]
-mswd <- tapply(actdata2$steps[actdata2$daytype == "weekday"],actdata2$interval[actdata2$daytype == "weekday"],FUN = mean)
-mswe <- tapply(actdata2$steps[actdata2$daytype == "weekend"],actdata2$interval[actdata2$daytype == "weekend"],FUN = mean)
-
+ms2 <- tapply(actdata2$steps[actdata2$daytype == "weekday"],actdata2$interval[actdata2$daytype == "weekday"],FUN = mean)
+ms3 <- tapply(actdata2$steps[actdata2$daytype == "weekend"],actdata2$interval[actdata2$daytype == "weekend"],FUN = mean)
+d0 <- cbind(ms2,ms3,intervals)
 layout(c(1,2))
-plot(intervals,mswd,type = "l",main = "weekday",ylab = "steps",xlab = "")
-plot(intervals,mswe,type = "l",main = "weekend",ylab = "steps")
+plot(intervals,ms2,type = "l",main = "weekday",ylab = "steps",xlab = "")
+plot(intervals,ms3,type = "l",main = "weekend",ylab = "steps")
 ```
 
+
+```{r}
+#by(actdata$steps,actdata$interval,sum)
+#ugh <- tapply(actdata$steps,actdata$interval,FUN = mean)
+#summary(cars)
+```
 
